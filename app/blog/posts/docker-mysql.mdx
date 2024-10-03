@@ -1,0 +1,75 @@
+---
+title: 'docker容器化部署mysql+远程连接'
+publishedAt: '2024-10-03'
+---
+## 1️⃣拉取镜像
+1拉取镜像 mac m1pro芯片，我这里用的linux/arm64架构的镜像tag，具体可参考[docker mysql镜像列表](https://hub.docker.com/_/mysql/tags)
+```
+# docker pull mysql:lts
+```
+2稍等片刻后，查看本地拉取的镜像
+```
+# docker images
+```
+![描述](/docker-images.png)
+## 2️⃣根据镜像生成容器
+1根据镜像生成容器
+```
+# docker run -d -p 3307:3306 -e MYSQL_ROOT_PASSWORD=123456 --name atg_mysql mysql:lts
+```
+//
+[ -d ]: 后台运行\
+[ -p ]: 配置端口映射（容器的3306映射到Linux的3307端口）\
+[ -e ]: 添加配置信息（密码为123456）\
+[ --name ]: 容器名\
+mysql:lts ：镜像名\
+
+2查看运行中的容器
+```
+docker ps
+```
+```
+CONTAINER ID   IMAGE       COMMAND                   CREATED        STATUS         PORTS                               NAMES
+d0ffb776a5e2   mysql:lts   "docker-entrypoint.s…"   24 hours ago   Up 5 seconds   33060/tcp, 0.0.0.0:3307->3306/tcp   atg_mysql
+```
+
+3进入容器简单测试
+```
+docker exec -it atg_mysql bash
+```
+```
+yjb@root ~ % docker exec -it atg_mysql  bash
+bash-5.1# mysql -uroot -p123456
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 8
+Server version: 8.4.2 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2024, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql>
+
+```
+容器创建完毕
+
+## 3️⃣为mysql容器配置远程连接
+可能会出现的问题是：
+云服务器环境 3307端口配置，
+用户远程访问权限，注意下就好\
+navicat打开进行连接即可
+![描述](/mysql.png)
+
+## 4️⃣挂载数据目录
+这个容器其实只是简单测试MySQL容器，其中的数据，Docker一但重启就会消失，真正在正式使用的时候，会将MySQL中的数据、日志、配置文件等重要文件亦或是其他重要文件进行挂载操作。防止数据丢失。
+
+生成容器时 -v命令 映射配置，数据，log目录，这里只指定数据目录
+```
+# docker run -d -p 3307:3306 -e MYSQL_ROOT_PASSWORD=123456 -v /Users/yjb/docker_data/mysql/lib_data:/var/lib/mysql  --name atg_mysql mysql:lts
+
+```
